@@ -9,7 +9,7 @@ import argparse
 import json
 import subprocess
 from functools import lru_cache, partial
-from operator import sub
+from operator import sub, itemgetter
 from typing import Dict, List, Tuple
 
 from Bio.pairwise2 import align
@@ -39,12 +39,12 @@ def get_fingerprint(p):
     """
     Use chromaprint to calculate fingerprint from file path
     """
-    out = subprocess.run(['fpcalc', '-json', '-raw', p], capture_output=True)
+    out = subprocess.run(['fpcalc', '-json', '-raw', p], capture_output=True, check=True)
     return json.loads(out.stdout)
 
 
-def get_chunk(a: int, i: int) -> int:
-    return GREY_CODE[(a >> (2 * i)) & 0b11]
+def get_chunk(a: int, i: int):
+    return (a >> (2 * i)) & 0b11
 
 
 @lru_cache(maxsize=2048)
@@ -52,7 +52,7 @@ def get_chunks(a: int) -> Tuple[int]:
     """
     Splitting integer into 16 2-bit chunks
     """
-    return tuple(map(partial(get_chunk, a), range(16)))
+    return itemgetter(*map(partial(get_chunk, a), range(16)))(GREY_CODE)
 
 
 def match_score(a: int, b: int) -> int:
